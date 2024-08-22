@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Chat Board</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const roomSelect = document.getElementById("room");
+      const roomForm = document.getElementById("room-id");
+      const chatPanel = document.getElementById("chat-panel");
+      const avgCharCount = document.getElementById("avg-char-count");
+      const reverseSelect = document.getElementById("reverse-order");
+
+      // Load the saved room selection and reverse order from local storage
+      const savedRoom = localStorage.getItem("selectedRoom");
+      const savedReverse = localStorage.getItem("selectedReverse") === 'true';
+      if (savedRoom) {
+        roomSelect.value = savedRoom;
+        roomForm.setAttribute("value", savedRoom);
+      }
+      reverseSelect.checked = savedReverse.valueOf();
+
+      function fetchChatData() {
+        const selectedRoom = roomSelect.value;
+        const reverseOrder = reverseSelect.checked;
+        roomForm.setAttribute("value", selectedRoom);
+        localStorage.setItem("selectedRoom", selectedRoom); // Save the selected room to local storage
+        localStorage.setItem("selectedReverse", reverseOrder.toString());
+        // Save the reverse order to local storage
+        fetch(`/chat?room=${selectedRoom}&reverse=${reverseOrder}`)
+          .then(response => response.text())
+          .then(data => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data, 'text/html');
+            chatPanel.innerHTML = doc.getElementById("chat-panel").innerHTML;
+            avgCharCount.innerHTML = doc.getElementById("avg-char-count").innerHTML;
+          })
+          .catch(error => console.error('Error fetching chat data:', error));
+      }
+
+      roomSelect.addEventListener("change", fetchChatData);
+      reverseSelect.addEventListener("change", fetchChatData);
+
+      // Trigger change event on page load to load initial chat data
+      roomSelect.dispatchEvent(new Event("change"));
+    });
+  </script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+    <!-- Room Selection -->
+    <div class="mb-4">
+      <label for="room" class="block text-sm font-medium text-gray-700">Select Room</label>
+      <select id="room" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+        <option value="1">Room 1</option>
+        <option value="2">Room 2</option>
+        <option value="3">Room 3</option>
+      </select>
+    </div>
+
+    <!-- Search Panel -->
+    <div class="mb-4">
+      <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
+      <div class="flex space-x-4">
+        <input type="text" id="search" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+        <button id="search-btn" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Search</button>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="mb-4">
+      <div class="bg-gray-50 p-4 rounded-lg h-64 overflow-y-auto">
+        <div id="chat-panel" class="space-y-2">
+          <!-- Chat messages will be appended here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Average Character Count Panel -->
+    <div class="mb-4">
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <p class="text-sm text-gray-700">Average Character Count: <span id="avg-char-count">
+          <!-- Average Value -->
+        </span></p>
+      </div>
+    </div>
+
+    <form id="chat-form" action="/chat" method="post">
+      <!-- Input Fields -->
+      <label for="room-id" hidden>room-id</label>
+      <input id="room-id" type="text" name="room" value="1" hidden>
+
+      <div class="mb-4">
+        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+        <input type="text" name="name" id="name" required
+               class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-b-2 border-black-200 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+      </div>
+      <div class="mb-4">
+        <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
+        <textarea id="message" name="message" required
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-2 border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"></textarea>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex space-x-4 mb-4">
+        <button id="send-btn" type="submit"
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Send</button>
+        <button id="refresh-btn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">Refresh</button>
+      </div>
+    </form>
+
+    <!-- Reverse Order Checkbox -->
+    <div class="mb-4">
+      <label for="reverse-order" class="inline-flex items-center">
+        <input type="checkbox" id="reverse-order" class="form-checkbox h-5 w-5 text-indigo-600">
+        <span class="ml-2 text-sm text-gray-700">Reverse Order</span>
+      </label>
+    </div>
+  </div>
+</body>
+</html>
